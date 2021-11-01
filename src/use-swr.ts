@@ -280,6 +280,10 @@ export const useSWRHandler = <Data = any, Error = any>(
           cache.set(keyErr, err)
           newState.error = err as Error
 
+          // Reset data if get a new error
+          cache.set(key, UNDEFINED)
+          newState.data = UNDEFINED
+
           // Error event and retry logic. Only for the actual request, not
           // deduped ones.
           if (shouldStartNewRequest && isCurrentKeyMounted()) {

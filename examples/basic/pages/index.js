@@ -1,19 +1,33 @@
 import Link from 'next/link'
-import fetch from '../libs/fetch'
 
 import useSWR from 'swr'
 
-export default function Index() {
-  const { data } = useSWR('/api/data', fetch)
+let count = 0
 
-  return <div style={{ textAlign: 'center' }}>
-    <h1>Trending Projects</h1>
-    <div>
+const fetcher = url => {
+  console.log(count)
+  if (++count <= 2) return 'data'
+  throw new Error('error')
+}
+
+export default function Index() {
+  const { data, error, mutate } = useSWR(
+    'https://api.github.com/repos/vercel/swr',
+    fetcher,
     {
-      data ? data.map(project =>
-        <p key={project}><Link href='/[user]/[repo]' as={`/${project}`}><a>{project}</a></Link></p>
-      ) : 'loading...'
+      shouldRetryOnError: false,
+      revalidateOnFocus: false
     }
+  )
+
+  console.log({ data, error })
+
+  return (
+    <div>
+      {error ? `${error.message}` : data}
+      <div>
+        <button onClick={() => mutate()}>mutate</button>
+      </div>
     </div>
-  </div>
+  )
 }

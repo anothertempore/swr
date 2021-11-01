@@ -101,6 +101,7 @@ describe('useSWR - error', () => {
     expect(success).toEqual(key)
     screen.getByText('hello, SWR')
   })
+
   it('should trigger limited error retries if errorRetryCount exists', async () => {
     const key = createKey()
     let count = 0
@@ -302,6 +303,38 @@ describe('useSWR - error', () => {
     screen.getByText('hello,true')
 
     await screen.findByText('error!,false')
+  })
+
+  // data --> error
+  it('should reset data when an error occured', async () => {
+    const key = createKey()
+    let count = 0
+    let data
+    let mutate
+    function Page() {
+      const { data: _data, error, mutate: _mutate } = useSWR(key, () =>
+        createResponse(++count > 1 ? new Error('error!') : 'data')
+      )
+      mutate = _mutate
+      React.useEffect(() => {
+        data = _data
+      }, [_data])
+
+      if (error) return <div>{error.message}</div>
+      return <div>hello,{_data}</div>
+    }
+
+    renderWithConfig(<Page />)
+    screen.getByText('hello,')
+
+    // mount(data stage)
+    await screen.findByText('hello,data')
+    expect(data).toBe('data')
+
+    // mutate(error stage)
+    await act(() => mutate())
+    await screen.findByText('error!')
+    expect(data).toBe(undefined)
   })
 
   it('should dedupe onError events', async () => {
